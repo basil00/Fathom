@@ -3,19 +3,21 @@ Fathom
 
 Fathom is a stand-alone Syzygy tablebase probing tool.  The aims of Fathom
 are:
-    * To make it easy to integrate the Syzygy tablebases into existing chess
-      engines;
-    * To make it easy to create stand-alone applications that use the Syzygy
-      tablebases;
+
+* To make it easy to integrate the Syzygy tablebases into existing chess
+  engines;
+* To make it easy to create stand-alone applications that use the Syzygy
+  tablebases;
 
 API
 ---
 
 Fathom provides a simple API.  There are three main function calls:
-    * `tb_init` initializes the tablebase
-    * `tb_probe_wdl` probes the Win-Draw-Loss (WDL) table for a given position
-    * `tb_probe_root` probes the Distance-To-Zero (DTZ) table for the given
-      position.
+
+* `tb_init` initializes the tablebase
+* `tb_probe_wdl` probes the Win-Draw-Loss (WDL) table for a given position
+* `tb_probe_root` probes the Distance-To-Zero (DTZ) table for the given
+  position.
 
 All of the API functions use basic integer types, i.e. there is no need to
 create and initialize data-structures.  Fathom does not require the callee
