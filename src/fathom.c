@@ -1,5 +1,5 @@
 /*
- * syzygy_probe.c
+ * fathom.c
  * (C) 2015 basil, all rights reserved,
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
