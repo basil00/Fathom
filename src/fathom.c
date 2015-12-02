@@ -2,6 +2,8 @@
  * fathom.c
  * (C) 2015 basil, all rights reserved,
  *
+ * parse_FEN optimized by folkert@vanheusden.com
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
  * to deal in the Software without restriction, including without limitation
@@ -65,9 +67,11 @@ struct pos
 /*
  * Parse a FEN string.
  */
+#define CASE_TO_INDEX(c) ((c & 32) >> 5)
+
 static bool parse_FEN(struct pos *pos, const char *fen)
 {
-    uint64_t white = 0, black = 0;
+    uint64_t col[2] = { 0, 0 };
     uint64_t kings, queens, rooks, bishops, knights, pawns;
     kings = queens = rooks = bishops = knights = pawns = 0;
     bool turn;
@@ -76,82 +80,36 @@ static bool parse_FEN(struct pos *pos, const char *fen)
     unsigned castling = 0;
     char c;
     int r, f;
+    uint64_t *lu[256];
+
+    lu[(int)'K'] = lu[(int)'k'] = &kings;
+    lu[(int)'Q'] = lu[(int)'q'] = &queens;
+    lu[(int)'R'] = lu[(int)'r'] = &rooks;
+    lu[(int)'B'] = lu[(int)'b'] = &bishops;
+    lu[(int)'N'] = lu[(int)'n'] = &knights;
+    lu[(int)'P'] = lu[(int)'p'] = &pawns;
 
     if (fen == NULL)
         goto fen_parse_error;
 
     for (r = 7; r >= 0; r--)
     {
-        for (f = 0; f <= 7; f++)
+        for (f = 0; f <= 7; f++, fen++)
         {
             unsigned s = (r * 8) + f;
             uint64_t b = board(s);
-            c = *fen++;
-            switch (c)
+            const char c = *fen;
+            if (c <= '9')
+                f += c - '0' - 1;
+            else
             {
-                case 'k':
-                    kings |= b;
-                    black |= b;
-                    continue;
-                case 'K':
-                    kings |= b;
-                    white |= b;
-                    continue;
-                case 'q':
-                    queens |= b;
-                    black |= b;
-                    continue;
-                case 'Q':
-                    queens |= b;
-                    white |= b;
-                    continue;
-                case 'r':
-                    rooks |= b;
-                    black |= b;
-                    continue;
-                case 'R':
-                    rooks |= b;
-                    white |= b;
-                    continue;
-                case 'b':
-                    bishops |= b;
-                    black |= b;
-                    continue;
-                case 'B':
-                    bishops |= b;
-                    white |= b;
-                    continue;
-                case 'n':
-                    knights |= b;
-                    black |= b;
-                    continue;
-                case 'N':
-                    knights |= b;
-                    white |= b;
-                    continue;
-                case 'p':
-                    pawns |= b;
-                    black |= b;
-                    continue;
-                case 'P':
-                    pawns |= b;
-                    white |= b;
-                    continue;
-                default:
-                    break;
+                col[CASE_TO_INDEX(c)] |= b;
+                (*lu[(int)c]) |= b;
             }
-            if (c >= '1' && c <= '8')
-            {
-                unsigned jmp = (unsigned)c - '0';
-                f += jmp-1;
-                continue;
-            }
-            goto fen_parse_error;
         }
         if (r == 0)
             break;
-        c = *fen++;
-        if (c != '/')
+        if (*fen++ != '/')
             goto fen_parse_error;
     }
     c = *fen++;
@@ -203,9 +161,9 @@ static bool parse_FEN(struct pos *pos, const char *fen)
             goto fen_parse_error;
         if (rank == 5 && !turn)
             goto fen_parse_error;
-        if (rank == 2 && ((tb_pawn_attacks(ep, true) & (black & pawns)) == 0))
+        if (rank == 2 && ((tb_pawn_attacks(ep, true) & (col[CASE_TO_INDEX('k')] & pawns)) == 0)) /* black */
             ep = 0;
-        if (rank == 5 && ((tb_pawn_attacks(ep, false) & (white & pawns)) == 0))
+        if (rank == 5 && ((tb_pawn_attacks(ep, false) & (col[CASE_TO_INDEX('K')] & pawns)) == 0)) /* white */
             ep = 0;
     }
     else if (c != '-')
@@ -240,8 +198,8 @@ static bool parse_FEN(struct pos *pos, const char *fen)
     rule50 = atoi(clk);
     move = atoi(fen);
 
-    pos->white = white;
-    pos->black = black;
+    pos->white = col[CASE_TO_INDEX('K')];
+    pos->black = col[CASE_TO_INDEX('k')];
     pos->kings = kings;
     pos->queens = queens;
     pos->rooks = rooks;
