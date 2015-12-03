@@ -38,6 +38,16 @@
 #define file(s)                 ((s) & 0x07)
 #define board(s)                ((uint64_t)1 << (s))
 
+#ifdef __GNUG__
+        #define likely(x)       __builtin_expect((x), 1)
+        #define unlikely(x)     __builtin_expect((x), 0)
+	#define __PRAGMA_PACKED__ __attribute__ ((__packed__))
+#else
+        #define likely(x) (x)
+        #define unlikely(x) (x)
+	#define __PRAGMA_PACKED__
+#endif
+
 static const char *wdl_to_str[5] =
 {
     "0-1",
@@ -99,7 +109,7 @@ static bool parse_FEN(struct pos *pos, const char *fen)
             unsigned s = (r * 8) + f;
             uint64_t b = board(s);
             const char c = *fen;
-            if (c <= '9')
+			if (likely(c <= '9'))
                 f += c - '0' - 1;
             else
             {
@@ -109,18 +119,18 @@ static bool parse_FEN(struct pos *pos, const char *fen)
         }
         if (r == 0)
             break;
-        if (*fen++ != '/')
+		if (unlikely(*fen++ != '/'))
             goto fen_parse_error;
     }
     c = *fen++;
-    if (c != ' ')
+	if (unlikely(c != ' '))
         goto fen_parse_error;
     c = *fen++;
-    if (c != 'w' && c != 'b')
+	if (unlikely(c != 'w' && c != 'b'))
         goto fen_parse_error;
     turn = (c == 'w');
     c = *fen++;
-    if (c != ' ')
+	if (unlikely(c != ' '))
         goto fen_parse_error;
     c = *fen++;
     if (c != '-')
@@ -146,7 +156,7 @@ static bool parse_FEN(struct pos *pos, const char *fen)
         fen--;
     }
     c = *fen++;
-    if (c != ' ')
+	if (unlikely(c != ' '))
         goto fen_parse_error;
     c = *fen++;
     if (c >= 'a' && c <= 'h')
@@ -166,27 +176,27 @@ static bool parse_FEN(struct pos *pos, const char *fen)
         if (rank == 5 && ((tb_pawn_attacks(ep, false) & (col[CASE_TO_INDEX('K')] & pawns)) == 0)) /* white */
             ep = 0;
     }
-    else if (c != '-')
+	else if (unlikely(c != '-'))
         goto fen_parse_error;
     c = *fen++;
-    if (c != ' ')
+	if (unlikely(c != ' '))
         goto fen_parse_error;
     char clk[4];
     clk[0] = *fen++;
-    if (clk[0] < '0' || clk[0] > '9')
+	if (unlikely(clk[0] < '0' || clk[0] > '9'))
         goto fen_parse_error;
     clk[1] = *fen++;
     if (clk[1] != ' ')
     {
-        if (clk[1] < '0' || clk[1] > '9')
+		if (unlikely(clk[1] < '0' || clk[1] > '9'))
             goto fen_parse_error;
         clk[2] = *fen++;
         if (clk[2] != ' ')
         {
-            if (clk[2] < '0' || clk[2] > '9')
+			if (unlikely(clk[2] < '0' || clk[2] > '9'))
                 goto fen_parse_error;
             c = *fen++;
-            if (c != ' ')
+			if (unlikely(c != ' '))
                 goto fen_parse_error;
             clk[3] = '\0';
         }
