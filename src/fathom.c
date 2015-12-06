@@ -456,9 +456,9 @@ static void print_PV(struct pos *pos)
 /*
  * Print a list of moves that match the WDL value.
  */
-static void print_moves(struct pos *pos, unsigned *results, unsigned wdl)
+static bool print_moves(struct pos *pos, unsigned *results, bool prev,
+    unsigned wdl)
 {
-    bool prev = false;
     for (unsigned i = 0; results[i] != TB_RESULT_FAILED; i++)
     {
         if (TB_GET_WDL(results[i]) != wdl)
@@ -470,6 +470,7 @@ static void print_moves(struct pos *pos, unsigned *results, unsigned wdl)
         move_to_str(pos, results[i], str);
         printf("%s", str);
     }
+    return prev;
 }
 
 /*
@@ -631,15 +632,18 @@ int main(int argc, char **argv)
     printf("[WDL \"%s\"]\n", wdl_to_name_str[wdl]);
     printf("[DTZ \"%u\"]\n", TB_GET_DTZ(res));
     printf("[WinningMoves \"");
-    print_moves(pos, results, TB_WIN);
+    bool prev = false;
+    print_moves(pos, results, prev, TB_WIN);
     printf("\"]\n");
     printf("[DrawingMoves \"");
-    print_moves(pos, results, TB_CURSED_WIN);
-    print_moves(pos, results, TB_DRAW);
-    print_moves(pos, results, TB_BLESSED_LOSS);
+    prev = false;
+    prev = print_moves(pos, results, prev, TB_CURSED_WIN);
+    prev = print_moves(pos, results, prev, TB_DRAW);
+    prev = print_moves(pos, results, prev, TB_BLESSED_LOSS);
     printf("\"]\n");
     printf("[LosingMoves \"");
-    print_moves(pos, results, TB_LOSS);
+    prev = false;
+    print_moves(pos, results, prev, TB_LOSS);
     printf("\"]\n");
     print_PV(pos);
 
