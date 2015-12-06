@@ -9,8 +9,35 @@ are:
 * To make it easy to create stand-alone applications that use the Syzygy
   tablebases;
 
-API
----
+Tool
+----
+
+Fathom includes a stand-alone command-line syzygy probing tool `fathom`.  To
+probe a position, simply run the command:
+
+    fathom --path=<path-to-TB-files> "FEN-string"
+
+The tool will print out a PGN representation of the probe result, including:
+
+* Result: "1-0" (white wins), "1/2-1/2" (draw), or "0-1" (black wins)
+* The Win-Draw-Loss (WDL) value for the next move: "Win", "Draw", "Loss",
+  "CursedWin" (win but 50-move draw) or "BlessedLoss" (loss but 50-move draw)
+* The Distance-To-Zero (DTZ) value (in plys) for the next move
+* WinningMoves: The list of all winning moves
+* DrawingMoves: The list of all drawing moves
+* LosingMoves: The list of all losing moves
+* A pseudo "principle variation" of Syzygy vs. Syzygy for the input position.
+
+For more information, run the following command:
+
+    fathom --help
+
+Pre-compiled versions of `fathom` (for all platforms) are available from here:
+
+* https://github.com/basil00/Fathom/releases
+
+Programming API
+---------------
 
 Fathom provides a simple API.  There are three main function calls:
 
@@ -24,14 +51,6 @@ create and initialize data-structures.  Fathom does not require the callee
 to provide any additional functionality (e.g. move generation) unlike the
 traditional `tbprobe` code.  However, chess engines can opt to replace some
 of the functionality of Fathom for better performance (see below).
-
-Tool
-----
-
-Fathom includes a stand-alone command-line syzygy probing tool `fathom`.
-Run the following command for more information:
-
-    fathom --help
 
 Chess Engines
 -------------
