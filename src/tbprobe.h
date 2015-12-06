@@ -107,7 +107,7 @@ extern unsigned tb_probe_root_impl(
 #define TB_RESULT_FROM_MASK         0x0000FC00
 #define TB_RESULT_PROMOTES_MASK     0x00070000
 #define TB_RESULT_EP_MASK           0x00080000
-#define TB_RESULT_DTZ_MASK          0x0FF00000
+#define TB_RESULT_DTZ_MASK          0xFFF00000
 #define TB_RESULT_WDL_SHIFT         0
 #define TB_RESULT_TO_SHIFT          4
 #define TB_RESULT_FROM_SHIFT        10
