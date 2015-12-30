@@ -29,7 +29,9 @@
 
 #include "tbprobe.h"
 
+#ifndef TB_NO_HW_POP_COUNT
 #include <x86intrin.h>
+#endif
 
 #define WHITE_KING              (TB_WPAWN + 5)
 #define WHITE_QUEEN             (TB_WPAWN + 4)
@@ -118,12 +120,18 @@ unsigned TB_LARGEST = 0;
 #define rank(s)                 ((s) >> 3)
 #define file(s)                 ((s) & 0x07)
 #define board(s)                ((uint64_t)1 << (s))
+#if defined(__x86_64__)
 static inline unsigned lsb(uint64_t b)
 {
     size_t idx;
     __asm__("bsfq %1, %0": "=r"(idx): "rm"(b));
     return idx;
 }
+#else
+// from http://cb2pgn.googlecode.com/svn/trunk/jni/mstl/m_bit_functions.ipp
+inline unsigned ctz(unsigned long long x)      { return __builtin_ctzll(x); }
+inline unsigned lsb(uint64_t x)                                { return ctz(x); }
+#endif
 #define square(r, f)            (8 * (r) + (f))
 
 #ifdef TB_KING_ATTACKS
