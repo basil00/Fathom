@@ -1776,7 +1776,7 @@ static uint16_t probe_root(const struct pos *pos, int *score,
     }
 }
 
-extern bool tb_init(const char *path)
+extern bool tb_init_impl(const char *path)
 {
     if (sizeof(uint64_t) != 8 &&        // Paranoid check
             sizeof(uint32_t) != 4 &&
