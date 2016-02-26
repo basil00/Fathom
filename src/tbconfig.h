@@ -29,6 +29,28 @@
 /****************************************************************************/
 
 /*
+ * Define TB_CUSTOM_POP_COUNT to override the internal popcount
+ * implementation. To do this supply a macro or function with the signature:
+ * unsigned popcount(uint64_t x)
+ */
+/* #define TB_CUSTOM_POP_COUNT */
+
+/*
+ * Define TB_CUSTOM_LSB to override the internal lsb
+ * implementation. To do this supply a function or macro with the signature:
+ * unsigned lsb(uint64_t x)
+ */
+/* #define TB_CUSTOM_LSB */
+
+/*
+ * Define TB_CUSTOM_BSWAP to override the internal bswap*
+ * implementation. To do this supply macros or functions with the signatures:
+ * uint64_t bswap64(uint64_t x) and
+ * uint32_t bswap32(uint32_t x)
+ */
+/* #define TB_CUSTOM_BSWAP */
+
+/*
  * Define TB_NO_STDINT if you do not want to use <stdint.h> or it is not
  * available.
  */
