@@ -47,14 +47,14 @@
  * implementation. To do this supply a macro or function definition
  * here:
  */
-/* #define TB_CUSTOM_BSWAP32 <DEFINITION> */
+/* #define TB_CUSTOM_BSWAP32(x) <DEFINITION> */
 
 /*
  * Define TB_CUSTOM_BSWAP64 to override the internal bswap64
  * implementation. To do this supply a macro or function definition
  * here:
  */
-/* #define TB_CUSTOM_BSWAP64 <DEFINITION> */
+/* #define TB_CUSTOM_BSWAP64(x) <DEFINITION> */
 
 /*
  * Define TB_NO_STDINT if you do not want to use <stdint.h> or it is not
