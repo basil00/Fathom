@@ -260,6 +260,31 @@ fen_parse_error:
 }
 
 /*
+ * Test if the king is in check.
+ */
+static bool is_check(const struct pos *pos)
+{
+    uint64_t occ = pos->white | pos->black;
+    uint64_t us = (pos->turn? pos->white: pos->black),
+             them = (pos->turn? pos->black: pos->white);
+    uint64_t king = pos->kings & us;
+    unsigned sq = tb_lsb(king);
+    uint64_t ratt = tb_rook_attacks(sq, occ);
+    uint64_t batt = tb_bishop_attacks(sq, occ);
+    if (ratt & (pos->rooks & them))
+        return true;
+    if (batt & (pos->bishops & them))
+        return true;
+    if ((ratt | batt) & (pos->queens & them))
+        return true;
+    if (tb_knight_attacks(sq) & (pos->knights & them))
+        return true;
+    if (tb_pawn_attacks(sq, pos->turn) & (pos->pawns & them))
+        return true;
+    return false;
+}
+
+/*
  * Convert a move into a string.
  */
 static void move_to_str(const struct pos *pos, unsigned move, char *str)
@@ -414,7 +439,7 @@ static void do_move(struct pos *pos, unsigned move)
 static void print_PV(struct pos *pos)
 {
     putchar('\n');
-    bool first = true;
+    bool first = true, check = false;
     if (!pos->turn)
     {
         first = false;
@@ -435,6 +460,8 @@ static void print_PV(struct pos *pos)
             printf("# %s\n", (pos->turn? "0-1": "1-0"));
             return;
         }
+        if (check)
+            putchar('+');
         if (pos->rule50 >= 100 || move == TB_RESULT_STALEMATE)
         {
             printf(" 1/2-1/2\n");
@@ -450,6 +477,7 @@ static void print_PV(struct pos *pos)
             printf("%u. ", pos->move);
         printf("%s", str);
         do_move(pos, move);
+        check = is_check(pos);
     }
 }
 
