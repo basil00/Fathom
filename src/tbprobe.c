@@ -1721,7 +1721,7 @@ static uint16_t probe_root(const struct pos *pos, int *score,
             res = TB_SET_TO(res, move_to(moves[i]));
             res = TB_SET_PROMOTES(res, move_promotes(moves[i]));
             res = TB_SET_EP(res, is_en_passant(pos, moves[i]));
-            res = TB_SET_DTZ(res, (dtz < 0? -dtz: dtz));
+            res = TB_SET_DTZ(res, (v < 0? -v: v));
             results[j++] = res;
         }
     }
