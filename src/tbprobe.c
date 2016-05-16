@@ -1178,10 +1178,14 @@ static bool is_en_passant(const struct pos *pos, uint16_t move)
 }
 
 /*
- * Test if the given position is legal (can the king be captured?)
+ * Test if the given position is legal.
+ * (Pawns on backrank? Can the king be captured?)
  */
 static bool is_legal(const struct pos *pos)
 {
+    if (pos->pawns & BOARD_FILE_EDGE)
+        return false;
+
     uint64_t occ = pos->white | pos->black;
     uint64_t us = (pos->turn? pos->black: pos->white),
              them = (pos->turn? pos->white: pos->black);
