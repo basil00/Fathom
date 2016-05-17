@@ -1183,9 +1183,6 @@ static bool is_en_passant(const struct pos *pos, uint16_t move)
  */
 static bool is_legal(const struct pos *pos)
 {
-    if (pos->pawns & BOARD_FILE_EDGE)
-        return false;
-
     uint64_t occ = pos->white | pos->black;
     uint64_t us = (pos->turn? pos->black: pos->white),
              them = (pos->turn? pos->white: pos->black);
@@ -1294,6 +1291,8 @@ static bool is_valid(const struct pos *pos)
     if ((pos->bishops & pos->pawns) != 0)
         return false;
     if ((pos->knights & pos->pawns) != 0)
+        return false;
+    if (pos->pawns & BOARD_FILE_EDGE)
         return false;
     if ((pos->white | pos->black) !=
         (pos->kings | pos->queens | pos->rooks | pos->bishops | pos->knights |
