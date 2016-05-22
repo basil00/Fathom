@@ -1172,7 +1172,7 @@ static bool is_en_passant(const struct pos *pos, uint16_t move)
         return false;
     if (to != pos->ep)
         return false;
-    if ((board(from) & us & pos->pawns) != 0)
+    if ((board(from) & us & pos->pawns) == 0)
         return false;
     return true;
 }
@@ -1426,7 +1426,7 @@ static int probe_wdl(const struct pos *pos, int *success)
         struct pos pos1;
         if (!do_move(&pos1, pos, *moves))
             continue;
-        int v0 = -probe_ab(pos, -2, 2, success);
+        int v0 = -probe_ab(&pos1, -2, 2, success);
         if (*success == 0)
             return 0;
         if (v0 > v1)
@@ -1603,7 +1603,7 @@ static int probe_dtz(const struct pos *pos, int *success)
         struct pos pos1;
         if (!do_move(&pos1, pos, *moves))
             continue;
-        int v0 = -probe_ab(pos, -2, 2, success);
+        int v0 = -probe_ab(&pos1, -2, 2, success);
         if (*success == 0)
             return 0;
         if (v0 > v1)
