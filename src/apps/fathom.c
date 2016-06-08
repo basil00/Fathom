@@ -407,7 +407,7 @@ static void do_move(struct pos *pos, unsigned move)
             ep = from-8;
         else if (TB_GET_EP(move))
         {
-            unsigned ep_to = (pos->turn? to+8: to-8);
+            unsigned ep_to = (pos->turn? to-8: to+8);
             uint64_t ep_mask = ~board(ep_to);
             white &= ep_mask;
             black &= ep_mask;
