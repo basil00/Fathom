@@ -1484,7 +1484,9 @@ static int probe_dtz_no_ep(const struct pos *pos, int *success)
             struct pos pos1;
             if (!do_move(&pos1, pos, *moves))
                 continue;
-            int v = -probe_wdl(&pos1, success);
+            int v = (pos1.ep == 0?
+                -probe_ab(&pos1, -2, -wdl + 1, success):
+                -probe_wdl(&pos1, success));
             if (*success == 0)
                 return 0;
             if (v == wdl)
