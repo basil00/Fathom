@@ -80,6 +80,14 @@
 
 /*
  * Define TB_NO_HW_POP_COUNT if there is no hardware popcount instruction.
+ *
+ * Note: if defined, TB_CUSTOM_POP_COUNT is always used in preference
+ * to any built-in popcount functions.
+ *
+ * If no custom popcount function is defined, and if the following
+ * define is not set, the code will attempt to use an available hardware
+ * popcnt (currently supported on x86_64 architecture only) and otherwise
+ * will fall back to a software implementation.
  */
 /* #define TB_NO_HW_POP_COUNT */
 
