@@ -86,20 +86,36 @@ static FD open_tb(const char *str, const char *suffix)
 {
   int i;
   FD fd;
-  char file[256];
+  int remain;
+#ifdef _WIN32
+  const int MAX_LEN = MAX_PATH;
+#else
+  // assume 256
+  const int MAX_LEN = 256;
+#endif
+  remain = MAX_LEN-1; // allow room for null
+  char file[MAX_LEN];
 
   for (i = 0; i < num_paths; i++) {
-    strcpy(file, paths[i]);
-    strcat(file, "/");
-    strcat(file, str);
-    strcat(file, suffix);
+    strncpy(file, paths[i], remain);
+    remain -= strlen(paths[i]);
+    if (remain <=0) break;
+    strncat(file, "/", remain);
+    remain--;
+    if (remain <=0) break;
+    strncat(file, str, remain);
+    remain -= strlen(str);
+    if (remain <=0) break;
+    strncat(file, suffix, remain);
 #ifndef _WIN32
     fd = open(file, O_RDONLY);
 #else
     fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
 			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
-    if (fd != FD_ERR) return fd;
+    if (fd != FD_ERR) {
+      return fd;
+    }
   }
   return FD_ERR;
 }
@@ -120,7 +136,10 @@ static char *map_file(const char *name, const char *suffix, uint64 *mapping)
     return NULL;
 #ifndef _WIN32
   struct stat statbuf;
-  fstat(fd, &statbuf);
+  if (fstat(fd, &statbuf)) {
+    close_tb(fd);
+    return NULL;
+  }
   *mapping = statbuf.st_size;
   char *data = (char *)mmap(NULL, statbuf.st_size, PROT_READ,
 			      MAP_SHARED, fd, 0);
