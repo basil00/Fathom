@@ -7,7 +7,7 @@ ifeq ($(UNAME),Darwin)
 endif
 CC=clang
 STRIP=strip
-CFLAGS=-std=gnu99 -O2 -Wall -D TB_NO_THREADS -D TB_NO_HW_POP_COUNT -I..
+CFLAGS=-std=c99 -O2 -Wall -D TB_NO_THREADS -I..
 
 main: $(TARGET)
 
