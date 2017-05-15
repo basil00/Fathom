@@ -702,10 +702,12 @@ static int probe_wdl_table(const struct pos *pos, int *success)
                 return 0;
             }
             // Memory barrier to ensure ptr->ready = 1 is not reordered.
+#if !defined(__cplusplus) || !defined(TB_USE_ATOMIC)
 #ifdef __GNUC__
             __asm__ __volatile__ ("" ::: "memory");
 #elif defined(_MSC_VER)
             MemoryBarrier();
+#endif
 #endif
             ptr->ready = 1;
         }

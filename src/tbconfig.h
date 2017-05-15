@@ -1,7 +1,7 @@
 /*
  * tbconfig.h
  * (C) 2015 basil, all rights reserved,
- * Modifications Copyright 2016 Jon Dart
+ * Modifications Copyright 2016-2017 Jon Dart
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -91,6 +91,12 @@
  * will fall back to a software implementation.
  */
 /* #define TB_NO_HW_POP_COUNT */
+
+/**
+ * Define TB_USE_ATOMIC to use C++ 11 (or higher) <atomic> feature 
+ * (recommended if using C++ and compiler supports it).
+ */
+/* #define TB_USE_ATOMIC */
 
 /***************************************************************************/
 /* ENGINE INTEGRATION CONFIG                                               */
