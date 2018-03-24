@@ -1,5 +1,6 @@
 /*
   Copyright (c) 2011-2015 Ronald de Man
+  Copyright 2017-2018 Jon Dart
 */
 
 #ifndef TBCORE_H
@@ -21,7 +22,15 @@
 #define FD_ERR INVALID_HANDLE_VALUE
 #endif
 
-#ifdef TB_HAVE_THREADS
+#if defined(__cplusplus) && (__cplusplus >= 201103L)
+
+#include <mutex>
+#define LOCK_T std::mutex
+#define LOCK_INIT(x)
+#define LOCK(x) x.lock()
+#define UNLOCK(x) x.unlock()
+
+#else
 #ifndef _WIN32
 #define LOCK_T pthread_mutex_t
 #define LOCK_INIT(x) pthread_mutex_init(&(x), NULL)
@@ -33,11 +42,7 @@
 #define LOCK(x) WaitForSingleObject(x, INFINITE)
 #define UNLOCK(x) ReleaseMutex(x)
 #endif
-#else       /* !TB_HAVE_THREADS */
-#define LOCK_T          int
-#define LOCK_INIT(x)    /* NOP */
-#define LOCK(x)         /* NOP */
-#define UNLOCK(x)       /* NOP */
+
 #endif
 
 #define WDLSUFFIX ".rtbw"
