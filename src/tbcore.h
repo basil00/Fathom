@@ -22,6 +22,7 @@
 #define FD_ERR INVALID_HANDLE_VALUE
 #endif
 
+#ifndef TB_NO_THREADS
 #if defined(__cplusplus) && (__cplusplus >= 201103L)
 
 #include <mutex>
@@ -43,6 +44,12 @@
 #define UNLOCK(x) ReleaseMutex(x)
 #endif
 
+#endif
+#else /* TB_NO_THREADS */
+#define LOCK_T          int
+#define LOCK_INIT(x)    /* NOP */
+#define LOCK(x)         /* NOP */
+#define UNLOCK(x)       /* NOP */
 #endif
 
 #define WDLSUFFIX ".rtbw"
