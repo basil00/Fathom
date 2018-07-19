@@ -800,7 +800,7 @@ static uint64 encode_piece(struct TBEntry_piece *ptr, ubyte *norm, int *pos, int
   uint64 idx;
   int i, j, k, m, l, p;
   int n = ptr->num;
-  assert(n>=0 && n<6);
+  assert(n>=0 && n<7);
 
   if (pos[0] & 0x04) {
     for (i = 0; i < n; i++)
@@ -881,7 +881,7 @@ static uint64 encode_piece(struct TBEntry_piece *ptr, ubyte *norm, int *pos, int
   uint64 idx;
   int i, j, k, m, l, p;
   int n = ptr->num;
-  assert(n>=0 && n<6);
+  assert(n>=0 && n<7);
 
   if (ptr->enc_type < 3) {
     if (pos[0] & 0x04) {
