@@ -109,7 +109,7 @@ struct TBEntry_piece {
   uint64 key;
   uint64 mapping;
 #if defined(__cplusplus) && defined(TB_USE_ATOMIC)
-  atomic<ubyte> ready;
+  std::atomic<ubyte> ready;
 #else
   ubyte ready;
 #endif
@@ -128,7 +128,7 @@ struct TBEntry_pawn {
   uint64 key;
   uint64 mapping;
 #if defined(__cplusplus) && (__cplusplus >= 201103L)
-  atomic<ubyte> ready;
+  std::atomic<ubyte> ready;
 #else
   ubyte ready;
 #endif
