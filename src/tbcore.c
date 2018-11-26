@@ -8,10 +8,10 @@
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -106,33 +106,26 @@ static FD open_tb(const char *str, const char *suffix)
 {
   int i;
   FD fd;
-  size_t remain;
-#ifdef _WIN32
-  const int MAX_LEN = MAX_PATH;
-#else
-  // assume 256
-  const int MAX_LEN = 256;
-#endif
-  remain = MAX_LEN-1; // allow room for null
-  char file[MAX_LEN];
+  char *file;
 
   for (i = 0; i < num_paths; i++) {
-    strncpy(file, paths[i], remain);
-    remain -= strlen(paths[i]);
-    if (remain <=0) break;
-    strncat(file, "/", remain);
-    remain--;
-    if (remain <=0) break;
-    strncat(file, str, remain);
-    remain -= strlen(str);
-    if (remain <=0) break;
-    strncat(file, suffix, remain);
+    file = (char*)malloc(strlen(paths[i]) + strlen(str) +
+                         strlen(suffix) + 2);
+    strcpy(file, paths[i]);
+#ifdef _WIN32
+    strcat(file,"\\");
+#else
+    strcat(file,"/");
+#endif
+    strcat(file, str);
+    strcat(file, suffix);
 #ifndef _WIN32
     fd = open(file, O_RDONLY);
 #else
     fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
 			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
+    free(file);
     if (fd != FD_ERR) {
       return fd;
     }
