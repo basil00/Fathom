@@ -127,7 +127,7 @@ struct TBEntry_pawn {
   char *data;
   uint64 key;
   uint64 mapping;
-#if defined(__cplusplus) && (__cplusplus >= 201103L)
+#if defined(__cplusplus) && defined(TB_USE_ATOMIC)
   std::atomic<ubyte> ready;
 #else
   ubyte ready;
