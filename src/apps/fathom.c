@@ -326,9 +326,9 @@ static void move_to_str(const struct pos *pos, unsigned move, char *str)
         *str++ = 'a' + f;
     else if (tb_pop_count(att) > 1)
     {
-        if (tb_pop_count(att & (BOARD_FILE_A >> f)) <= 1)
+        if (tb_pop_count(att & (BOARD_FILE_A >> f)) == 1)
             *str++ = 'a' + f;
-        else if (tb_pop_count(att & (BOARD_RANK_1 >> r)) <= 1)
+        else if (tb_pop_count(att & (BOARD_RANK_1 << (8*r))) == 1)
             *str++ = '1' + r;
         else
         {
