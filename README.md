@@ -1,3 +1,6 @@
+**NOTICE:** This version of Fathom is no longer maintained.
+            Please use https://github.com/jdart1/Fathom instead.
+
 Fathom
 ======
 
