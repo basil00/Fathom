@@ -1,7 +1,7 @@
 /*
  * tbprobe.c
  * Copyright (c) 2013-2016 Ronald de Man
- * Copyright (c) 2016-2017 Jon Dart
+ * Copyright (c) 2016-2017, 2019 Jon Dart
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -25,6 +25,10 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
 
 #include "tbprobe.h"
 
@@ -135,13 +139,45 @@ unsigned TB_LARGEST = 0;
 #ifdef TB_CUSTOM_LSB
 #define lsb(b) TB_CUSTOM_LSB(b)
 #else
-static inline unsigned lsb(uint64_t b)
-{
-    size_t idx;
-    __asm__("bsfq %1, %0": "=r"(idx): "rm"(b));
-    return idx;
+#if defined(__GNUC__)
+static inline unsigned lsb(uint64_t b) {
+    assert(b != 0);
+    return __builtin_ffsll(b)-1;
+}
+#elif defined(_MSC_VER)
+static inline unsigned lsb(uint64_t b) {
+    assert(b != 0);
+    DWORD index;
+#ifdef _WIN64
+    _BitScanForward64(&index,b);
+    return (unsigned)index;
+#else
+    if (b & 0xffffffffULL) {
+      _BitScanForward(&index,(unsigned long)(b & 0xffffffffULL));
+      return (unsigned)index;
+    }
+    else {
+      _BitScanForward(&index,(unsigned long)(b >> 32));
+      return 32 + (unsigned)index;
+    }
+#endif
+}
+#else
+/* not a compiler/architecture with recognized builtins */
+static uint32_t get_bit32(uint64_t x) {
+  return (uint32_t)(((int32_t)(x))&-((int32_t)(x)));
+}
+static const unsigned MAGIC32 = 0xe89b2be;
+static const uint32_t MagicTable32[32] = {31,0,9,1,10,20,13,2,7,11,21,23,17,14,3,25,30,8,19,12,6,22,16,24,29,18,5,15,28,4,27,26};
+static unsigned lsb(uint64_t b) {
+  if (b & 0xffffffffULL)
+    return MagicTable32[(get_bit32(b & 0xffffffffULL)*MAGIC32)>>27];
+  else
+    return MagicTable32[(get_bit32(b >> 32)*MAGIC32)>>27]+32;
 }
 #endif
+#endif
+
 #define square(r, f)            (8 * (r) + (f))
 
 #ifdef TB_KING_ATTACKS

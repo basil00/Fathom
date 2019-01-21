@@ -78,7 +78,7 @@ License
 
 (C) 2013-2015 Ronald de Man (original code)
 (C) 2015 basil (new modifications)
-(C) 2016-2018 Jon Dart (additional modifications)
+(C) 2016-2019 Jon Dart (additional modifications)
 
 Ronald de Man's original code can be "redistributed and/or modified without
 restrictions".
