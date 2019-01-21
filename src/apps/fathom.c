@@ -1,6 +1,7 @@
 /*
  * fathom.c
- * (C) 2015 basil, all rights reserved,
+ * (C) 2015 basil, all rights reserved.
+ * (C) 2018-2019 Jon Dart, All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -567,7 +568,7 @@ int main(int argc, char **argv)
         {"test", 0, 0, OPTION_TEST},
         {NULL, 0, 0, 0}
     };
-    const char *path = NULL;
+    char *path = NULL;
     bool test = false;
     while (true)
     {
@@ -578,8 +579,9 @@ int main(int argc, char **argv)
         switch (opt)
         {
             case OPTION_PATH:
-                path = strdup(optarg);
+                path = (char*)malloc(sizeof(char)*(strlen(optarg)+1));
                 assert(path != NULL);
+                strcpy(path,optarg);
                 break;
             case OPTION_TEST:
                 test = true;
