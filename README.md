@@ -32,10 +32,6 @@ For more information, run the following command:
 
     fathom --help
 
-Pre-compiled versions of `fathom` (for all platforms) are available from here:
-
-* https://github.com/basil00/Fathom/releases
-
 Programming API
 ---------------
 
