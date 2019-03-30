@@ -5,15 +5,16 @@ endif
 ifeq ($(UNAME),Darwin)
     TARGET=fathom.macosx
 endif
-CC=clang
+CC?=gcc
 STRIP=strip
-CFLAGS=-std=c99 -O2 -Wall -D TB_NO_THREADS -I..
+#CFLAGS=-std=c99 -O2 -Wall -D TB_NO_THREADS -I..
+CFLAGS=-std=c99 -g -Wall -DDEBUG -DTB_NO_THREADS -I..
 
 main: $(TARGET)
 
 fathom.linux:
 	$(CC) $(CFLAGS) fathom.c ../tbprobe.c -o fathom.linux
-	$(STRIP) fathom.linux
+#	$(STRIP) fathom.linux
 
 fathom.macosx:
 	$(CC) $(CFLAGS) fathom.c ../tbprobe.c -o fathom.macosx

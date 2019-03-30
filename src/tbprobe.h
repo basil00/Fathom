@@ -88,7 +88,7 @@ extern unsigned tb_probe_root_impl(
 /****************************************************************************/
 
 #define TB_MAX_MOVES                (192+1)
-
+#define TB_MAX_PLY                  256
 #define TB_CASTLING_K               0x1     /* White king-side. */
 #define TB_CASTLING_Q               0x2     /* White queen-side. */
 #define TB_CASTLING_k               0x4     /* Black king-side. */
@@ -172,10 +172,12 @@ extern unsigned TB_LARGEST;
  *   initialized.  If no tablebase files are found, then `true' is returned
  *   and TB_LARGEST is set to zero.
  */
-static inline bool tb_init(const char *_path)
-{
-    return tb_init_impl(_path);
-}
+bool tb_init(const char *_path);
+
+/*
+ * Free any resources allocated by tb_init
+ */
+void tb_free(void);
 
 /*
  * Probe the Win-Draw-Loss (WDL) table.
