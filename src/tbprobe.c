@@ -1565,8 +1565,13 @@ static int probe_dtz_no_ep(const struct pos *pos, int *success)
             int v = -probe_dtz(&pos1, success);
             if (*success == 0)
                 return 0;
-            if (v > 0 && v + 1 < best)
-                best = v + 1;
+            if (v > 0 && v + 1 < best) {
+              // handle the case of mate in 1
+              if (v == 1 && is_mate(&pos1)) {
+                v = 0;
+              }
+              best = v + 1;
+            }
         }
         assert(best != BEST_NONE);
         return best;
