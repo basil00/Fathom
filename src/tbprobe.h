@@ -88,6 +88,7 @@ extern unsigned tb_probe_root_impl(
 /****************************************************************************/
 
 #define TB_MAX_MOVES                (192+1)
+#define TB_MAX_CAPTURES             64
 #define TB_MAX_PLY                  256
 #define TB_CASTLING_K               0x1     /* White king-side. */
 #define TB_CASTLING_Q               0x2     /* White queen-side. */
@@ -290,6 +291,82 @@ static inline unsigned tb_probe_root(
     return tb_probe_root_impl(_white, _black, _kings, _queens, _rooks,
         _bishops, _knights, _pawns, _rule50, _ep, _turn, _results);
 }
+
+typedef uint16_t TbMove;
+
+#define TB_MOVE_FROM(move)                                                 \
+    (((move) >> 6) & 0x3F)
+#define TB_MOVE_TO(move)                                                   \
+    ((move) & 0x3F)
+#define TB_MOVE_PROMOTES(move)                                             \
+    (((move) >> 12) & 0x7)
+
+struct TbRootMove {
+  TbMove move;
+  TbMove pv[TB_MAX_PLY];
+  unsigned pvSize;
+  int32_t tbScore, tbRank;
+};
+    
+struct TbRootMoves {
+  unsigned size;
+  struct TbRootMove moves[TB_MAX_MOVES];
+};
+
+/*
+ * Use the DTZ tables to rank and score all root moves.
+ * INPUT: as for tb_probe_root
+ * OUTPUT: TbRootMoves structure is filled in. This contains
+ * an array of TbRootMove structures.
+ * Each structure instance contains a rank, a score, and a
+ * predicted principal variation.
+ * RETURN VALUE:
+ *   non-zero if ok, 0 means not all probes were successful
+ * 
+ */
+int tb_probe_root_dtz(
+    uint64_t _white,
+    uint64_t _black,
+    uint64_t _kings,
+    uint64_t _queens,
+    uint64_t _rooks,
+    uint64_t _bishops,
+    uint64_t _knights,
+    uint64_t _pawns,
+    unsigned _rule50,
+    unsigned _castling,
+    unsigned _ep,
+    bool     _turn,
+    bool hasRepeated,
+    bool useRule50,
+    struct TbRootMoves *_results);
+    
+/*
+// Use the WDL tables to rank and score all root moves.
+// This is a fallback for the case that some or all DTZ tables are missing.
+ * INPUT: as for tb_probe_root
+ * OUTPUT: TbRootMoves structure is filled in. This contains
+ * an array of TbRootMove structures.
+ * Each structure instance contains a rank, a score, and a
+ * predicted principal variation.
+ * RETURN VALUE:
+ *   non-zero if ok, 0 means not all probes were successful
+ * 
+ */
+int tb_probe_root_wdl(uint64_t _white,
+    uint64_t _black,
+    uint64_t _kings,
+    uint64_t _queens,
+    uint64_t _rooks,
+    uint64_t _bishops,
+    uint64_t _knights,
+    uint64_t _pawns,
+    unsigned _rule50,
+    unsigned _castling,
+    unsigned _ep,
+    bool     _turn,
+    bool useRule50,
+    struct TbRootMoves *_results);
 
 /****************************************************************************/
 /* HELPER API                                                               */

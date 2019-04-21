@@ -1,3 +1,26 @@
+/*
+Copyright (c) 2015 basil00
+Modifications Copyright (c) 2016-2019 by Jon Dart
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #define TB_PAWN 1
 #define TB_KNIGHT 2
 #define TB_BISHOP 3
@@ -43,51 +66,82 @@
 #define BEST_NONE               0xFFFF
 #define SCORE_ILLEGAL           0x7FFF
 
+// Note: WHITE, BLACK values are reverse of Stockfish
+#ifdef __cplusplus
+enum Color { BLACK, WHITE };
+enum PieceType { PAWN=1, KNIGHT, BISHOP, ROOK, QUEEN, KING };
+enum Piece {
+  W_PAWN = 1, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
+  B_PAWN = 9, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING };
+#else
+typedef enum Color { BLACK, WHITE } Color;
+typedef enum PieceType { PAWN=1, KNIGHT, BISHOP, ROOK, QUEEN, KING } PieceType;
+typedef enum Piece {
+  W_PAWN = 1, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
+  B_PAWN = 9, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING
+} Piece;
+#endif
+
+static inline Color ColorOfPiece(int piece) {
+  return (Color)(!(piece >> 3));
+}
+
+static inline PieceType TypeOfPiece(int piece) {
+  return (PieceType)(piece & 7);
+}
+
+typedef int32_t Value;
+
+typedef struct Pos
+{
+    uint64_t white;
+    uint64_t black;
+    uint64_t kings;
+    uint64_t queens;
+    uint64_t rooks;
+    uint64_t bishops;
+    uint64_t knights;
+    uint64_t pawns;
+    uint8_t rule50;
+    uint8_t ep;
+    bool turn;
+} Pos;
+
+static inline uint64_t pieces_by_type(const Pos *pos, Color c, PieceType p) {
+  uint64_t mask = (c == WHITE) ? pos->white : pos->black;
+  switch(p) {
+  case PAWN:
+    return pos->pawns & mask;
+  case KNIGHT:
+    return pos->knights & mask;
+  case BISHOP:
+    return pos->bishops & mask;
+  case ROOK:
+    return pos->rooks & mask;
+  case QUEEN:
+    return pos->queens & mask;
+  case KING:
+    return pos->kings & mask;
+  default:
+    assert(0);
+    return 0;
+  }
+}
+
+static const char piece_to_char[] = " PNBRQK  pnbrqk";
+  
+// map upper-case characters to piece types
+static PieceType char_to_piece_type(char c) {
+    for (int i = PAWN; i <= KING; i++)
+       if (c == piece_to_char[i]) {
+         return (PieceType)i;
+       }
+    return (PieceType)0;
+}
+
 #define rank(s)                 ((s) >> 3)
 #define file(s)                 ((s) & 0x07)
 #define board(s)                ((uint64_t)1 << (s))
-#ifdef TB_CUSTOM_LSB
-#define lsb(b) TB_CUSTOM_LSB(b)
-#else
-#if defined(__GNUC__)
-static inline unsigned lsb(uint64_t b) {
-    assert(b != 0);
-    return __builtin_ffsll(b)-1;
-}
-#elif defined(_MSC_VER)
-static inline unsigned lsb(uint64_t b) {
-    assert(b != 0);
-    DWORD index;
-#ifdef _WIN64
-    _BitScanForward64(&index,b);
-    return (unsigned)index;
-#else
-    if (b & 0xffffffffULL) {
-      _BitScanForward(&index,(unsigned long)(b & 0xffffffffULL));
-      return (unsigned)index;
-    }
-    else {
-      _BitScanForward(&index,(unsigned long)(b >> 32));
-      return 32 + (unsigned)index;
-    }
-#endif
-}
-#else
-/* not a compiler/architecture with recognized builtins */
-static uint32_t get_bit32(uint64_t x) {
-  return (uint32_t)(((int32_t)(x))&-((int32_t)(x)));
-}
-static const unsigned MAGIC32 = 0xe89b2be;
-static const uint32_t MagicTable32[32] = {31,0,9,1,10,20,13,2,7,11,21,23,17,14,3,25,30,8,19,12,6,22,16,24,29,18,5,15,28,4,27,26};
-static unsigned lsb(uint64_t b) {
-  if (b & 0xffffffffULL)
-    return MagicTable32[(get_bit32(b & 0xffffffffULL)*MAGIC32)>>27];
-  else
-    return MagicTable32[(get_bit32(b >> 32)*MAGIC32)>>27]+32;
-}
-#endif
-#endif
-
 #define square(r, f)            (8 * (r) + (f))
 
 #ifdef TB_KING_ATTACKS
@@ -495,46 +549,10 @@ static void pawn_attacks_init(void)
 
 #endif      /* TB_PAWN_ATTACKS */
 
-static void prt_str(const struct Pos *pos, char *str, bool mirror)
-{
-    uint64_t white = pos->white, black = pos->black;
-    int i;
-    if (mirror)
-    {
-        uint64_t tmp = white;
-        white = black;
-        black = tmp;
-    }
-    *str++ = 'K';
-    for (i = popcount(white & pos->queens); i > 0; i--)
-        *str++ = 'Q';
-    for (i = popcount(white & pos->rooks); i > 0; i--)
-        *str++ = 'R';
-    for (i = popcount(white & pos->bishops); i > 0; i--)
-        *str++ = 'B';
-    for (i = popcount(white & pos->knights); i > 0; i--)
-        *str++ = 'N';
-    for (i = popcount(white & pos->pawns); i > 0; i--)
-        *str++ = 'P';
-    *str++ = 'v';
-    *str++ = 'K';
-    for (i = popcount(black & pos->queens); i > 0; i--)
-        *str++ = 'Q';
-    for (i = popcount(black & pos->rooks); i > 0; i--)
-        *str++ = 'R';
-    for (i = popcount(black & pos->bishops); i > 0; i--)
-        *str++ = 'B';
-    for (i = popcount(black & pos->knights); i > 0; i--)
-        *str++ = 'N';
-    for (i = popcount(black & pos->pawns); i > 0; i--)
-        *str++ = 'P';
-    *str++ = '\0';
-}
-
 /*
  * Given a position, produce a 64-bit material signature key.
  */
-static uint64_t calc_key(const struct Pos *pos, bool mirror)
+static uint64_t calc_key(const Pos *pos, bool mirror)
 {
     uint64_t white = pos->white, black = pos->black;
     if (mirror)
@@ -555,6 +573,10 @@ static uint64_t calc_key(const struct Pos *pos, bool mirror)
            popcount(black & pos->pawns)   * PRIME_BLACK_PAWN;
 }
 
+// Produce a 64-bit material key corresponding to the material combination
+// defined by pcs[16], where pcs[1], ..., pcs[6] are the number of white
+// pawns, ..., kings and pcs[9], ..., pcs[14] are the number of black
+// pawns, ..., kings.
 static uint64_t calc_key_from_pcs(int *pcs, int mirror)
 {
     mirror = (mirror? 8: 0);
@@ -570,37 +592,22 @@ static uint64_t calc_key_from_pcs(int *pcs, int mirror)
            pcs[BLACK_PAWN ^ mirror] * PRIME_BLACK_PAWN;
 }
 
-static uint64_t get_pieces(const struct Pos *pos, uint8_t code)
+// Produce a 64-bit material key corresponding to the material combination
+// piece[0], ..., piece[num - 1], where each value corresponds to a piece
+// (1-6 for white pawn-king, 9-14 for black pawn-king).
+static uint64_t calc_key_from_pieces(uint8_t *piece, int num)
 {
-    switch (code)
-    {
-        case WHITE_KING:
-            return pos->kings & pos->white;
-        case WHITE_QUEEN:
-            return pos->queens & pos->white;
-        case WHITE_ROOK:
-            return pos->rooks & pos->white;
-        case WHITE_BISHOP:
-            return pos->bishops & pos->white;
-        case WHITE_KNIGHT:
-            return pos->knights & pos->white;
-        case WHITE_PAWN:
-            return pos->pawns & pos->white;
-        case BLACK_KING:
-            return pos->kings & pos->black;
-        case BLACK_QUEEN:
-            return pos->queens & pos->black;
-        case BLACK_ROOK:
-            return pos->rooks & pos->black;
-        case BLACK_BISHOP:
-            return pos->bishops & pos->black;
-        case BLACK_KNIGHT:
-            return pos->knights & pos->black;
-        case BLACK_PAWN:
-            return pos->pawns & pos->black;
-        default:
-            return 0;   // Dummy.
+    uint64_t key = 0;
+    static const uint64_t keys[16] = {0,PRIME_WHITE_PAWN,PRIME_WHITE_KNIGHT,
+                                      PRIME_WHITE_BISHOP,PRIME_WHITE_ROOK,
+                                      PRIME_WHITE_QUEEN,0,0,PRIME_BLACK_PAWN,
+                                      PRIME_BLACK_KNIGHT,PRIME_BLACK_BISHOP,
+                                      PRIME_BLACK_ROOK,PRIME_BLACK_QUEEN,0};
+    for (int i = 0; i < num; i++) {
+      assert(piece[i]<16);
+      key += keys[piece[i]];
     }
+    return key;
 }
 
 #define make_move(promote, from, to)                                    \
@@ -612,11 +619,21 @@ static uint64_t get_pieces(const struct Pos *pos, uint8_t code)
 #define move_promotes(move)                                             \
     (((move) >> 12) & 0x7)
 
+static inline int type_of_piece_moved(Pos *pos, TbMove move) {
+  for (int i = PAWN; i <= KING; i++) {
+    if ((pieces_by_type(pos,(Color)(pos->turn == WHITE),(PieceType)i) & board(move_from(move))) != 0) {
+      return i;
+    }
+  }
+  assert(0);
+  return 0;
+}
+
 #define MAX_MOVES               TB_MAX_MOVES
 #define MOVE_STALEMATE          0xFFFF
 #define MOVE_CHECKMATE          0xFFFE
 
-static uint16_t *add_move(uint16_t *moves, bool promotes, unsigned from,
+static TbMove *add_move(TbMove *moves, bool promotes, unsigned from,
     unsigned to)
 {
     if (!promotes)
@@ -632,10 +649,9 @@ static uint16_t *add_move(uint16_t *moves, bool promotes, unsigned from,
 }
 
 /*
- * Generate all captures or promotions.
+ * Generate all captures, including all underpomotions
  */
-static uint16_t *gen_captures_or_promotions(const struct Pos *pos,
-    uint16_t *moves)
+static TbMove *gen_captures(const Pos *pos, TbMove *moves)
 {
     uint64_t occ = pos->white | pos->black;
     uint64_t us = (pos->turn? pos->white: pos->black),
@@ -700,71 +716,6 @@ static uint16_t *gen_captures_or_promotions(const struct Pos *pos,
             moves = add_move(moves, (rank(to) == 7 || rank(to) == 0), from,
                 to);
         }
-        if (pos->turn && rank(from) == 6)
-        {
-            unsigned to = from + 8;
-            if ((board(to) & occ) == 0)
-                moves = add_move(moves, true, from, to);
-        }
-        else if (!pos->turn && rank(from) == 1)
-        {
-            unsigned to = from - 8;
-            if ((board(to) & occ) == 0)
-                moves = add_move(moves, true, from, to);
-        }
-    }
-    return moves;
-}
-
-/*
- * Generate all non-capture pawn moves and promotions.
- */
-static uint16_t *gen_pawn_quiets_or_promotions(const struct Pos *pos,
-    uint16_t *moves)
-{
-    uint64_t occ = pos->white | pos->black;
-    uint64_t us = (pos->turn? pos->white: pos->black);
-    uint64_t b, att;
-
-    for (b = us & pos->pawns; b; b = poplsb(b))
-    {
-        unsigned from = lsb(b);
-        unsigned next = from + (pos->turn? 8: -8);
-        att = 0;
-        if ((board(next) & occ) == 0)
-        {
-            att |= board(next);
-            unsigned next2 = from + (pos->turn? 16: -16);
-            if ((pos->turn? rank(from) == 1: rank(from) == 6) &&
-                    ((board(next2) & occ) == 0))
-                att |= board(next2);
-        }
-        for (; att; att = poplsb(att))
-        {
-            unsigned to = lsb(att);
-            moves = add_move(moves, (rank(to) == 7 || rank(to) == 0), from,
-                to);
-        }
-    }
-    return moves;
-}
-
-/*
- * Generate all en passant captures.
- */
-static uint16_t *gen_pawn_ep_captures(const struct Pos *pos, uint16_t *moves)
-{
-    if (pos->ep == 0)
-        return moves;
-    uint64_t ep = board(pos->ep);
-    unsigned to = pos->ep;
-    uint64_t us = (pos->turn? pos->white: pos->black);
-    uint64_t b;
-    for (b = us & pos->pawns; b; b = poplsb(b))
-    {
-        unsigned from = lsb(b);
-        if ((pawn_attacks(from, pos->turn) & ep) != 0)
-            moves = add_move(moves, false, from, to);
     }
     return moves;
 }
@@ -772,7 +723,7 @@ static uint16_t *gen_pawn_ep_captures(const struct Pos *pos, uint16_t *moves)
 /*
  * Generate all moves.
  */
-static uint16_t *gen_moves(const struct Pos *pos, uint16_t *moves)
+static TbMove *gen_moves(const Pos *pos, TbMove *moves)
 {
     uint64_t occ = pos->white | pos->black;
     uint64_t us = (pos->turn? pos->white: pos->black),
@@ -855,7 +806,7 @@ static uint16_t *gen_moves(const struct Pos *pos, uint16_t *moves)
 /*
  * Test if the given move is an en passant capture.
  */
-static bool is_en_passant(const struct Pos *pos, uint16_t move)
+static bool is_en_passant(const Pos *pos, TbMove move)
 {
     uint16_t from = move_from(move);
     uint16_t to   = move_to(move);
@@ -869,11 +820,23 @@ static bool is_en_passant(const struct Pos *pos, uint16_t move)
     return true;
 }
 
+
+/*
+ * Test if the given move is a capture.
+ */
+static bool is_capture(const Pos *pos, TbMove move)
+{
+   uint16_t to   = move_to(move);
+   uint64_t them = (pos->turn? pos->black: pos->white);
+   return (them & board(to)) != 0 || is_en_passant(pos,move);
+}
+
+
 /*
  * Test if the given position is legal.
  * (Pawns on backrank? Can the king be captured?)
  */
-static bool is_legal(const struct Pos *pos)
+static bool is_legal(const Pos *pos)
 {
     uint64_t occ = pos->white | pos->black;
     uint64_t us = (pos->turn? pos->black: pos->white),
@@ -902,7 +865,7 @@ static bool is_legal(const struct Pos *pos)
 /*
  * Test if the king is in check.
  */
-static bool is_check(const struct Pos *pos)
+static bool is_check(const Pos *pos)
 {
     uint64_t occ = pos->white | pos->black;
     uint64_t us = (pos->turn? pos->white: pos->black),
@@ -927,7 +890,7 @@ static bool is_check(const struct Pos *pos)
 /*
  * Test if the position is valid.
  */
-static bool is_valid(const struct Pos *pos)
+static bool is_valid(const Pos *pos)
 {
     if (popcount(pos->kings) != 2)
         return false;
@@ -980,7 +943,7 @@ static bool is_valid(const struct Pos *pos)
     (((b) & (~board(to)) & (~board(from))) |                            \
         ((((b) >> (from)) & 0x1) << (to)))
 
-static bool do_move(struct Pos *pos, const struct Pos *pos0, uint16_t move)
+static bool do_move(Pos *pos, const Pos *pos0, TbMove move)
 {
     unsigned from = move_from(move); 
     unsigned to = move_to(move);  
@@ -1038,10 +1001,15 @@ static bool do_move(struct Pos *pos, const struct Pos *pos0, uint16_t move)
     return true;
 }
 
+static bool legal_move(const Pos *pos, TbMove move) {
+   struct Pos pos1;
+   return do_move(&pos1, pos, move);
+}
+
 /*
  * Test if the king is in checkmate.
  */
-static bool is_mate(const struct Pos *pos)
+static bool is_mate(const Pos *pos)
 {
     if (!is_check(pos))
         return false;
@@ -1050,11 +1018,26 @@ static bool is_mate(const struct Pos *pos)
     uint16_t *end = gen_moves(pos, moves);
     for (; moves < end; moves++)
     {
-        struct Pos pos1;
+        Pos pos1;
         if (do_move(&pos1, pos, *moves))
             return false;
     }
     return true;
 }
 
+/*
+ * Generate all legal moves.
+ */
+static TbMove *gen_legal(const Pos *pos, TbMove *moves)
+{
+  TbMove pl_moves[TB_MAX_MOVES];
+  TbMove *end = gen_moves(pos, pl_moves);
+  TbMove *results = moves;
+  for (TbMove *m = pl_moves; m < end; m++) {
+    if (legal_move(pos,*m)) {
+      *results++ = *m;
+    }
+  }
+  return results;
+}
 
