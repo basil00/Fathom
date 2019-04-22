@@ -249,7 +249,7 @@ inline static uint16_t read_le_u16(void *p)
 
 static size_t file_size(FD fd) {
 #ifdef _WIN32
-  LARGE_INTEGER fileSize; 
+  LARGE_INTEGER fileSize;
   if (GetFileSizeEx(fd, &fileSize)==0) {
     return 0;
   }
@@ -261,7 +261,7 @@ static size_t file_size(FD fd) {
   } else {
     return buf.st_size;
   }
-#endif  
+#endif
 }
 
 #ifndef TB_NO_THREADS
@@ -409,7 +409,7 @@ struct BaseEntry {
   map_t mapping[3];
 #ifdef __cplusplus
   atomic<bool> ready[3];
-#else  
+#else
   atomic_bool ready[3];
 #endif
   uint8_t num;

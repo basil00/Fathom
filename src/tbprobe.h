@@ -8,10 +8,10 @@
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -307,7 +307,7 @@ struct TbRootMove {
   unsigned pvSize;
   int32_t tbScore, tbRank;
 };
-    
+
 struct TbRootMoves {
   unsigned size;
   struct TbRootMove moves[TB_MAX_MOVES];
@@ -322,7 +322,7 @@ struct TbRootMoves {
  * predicted principal variation.
  * RETURN VALUE:
  *   non-zero if ok, 0 means not all probes were successful
- * 
+ *
  */
 int tb_probe_root_dtz(
     uint64_t _white,
@@ -340,7 +340,7 @@ int tb_probe_root_dtz(
     bool hasRepeated,
     bool useRule50,
     struct TbRootMoves *_results);
-    
+
 /*
 // Use the WDL tables to rank and score all root moves.
 // This is a fallback for the case that some or all DTZ tables are missing.
@@ -351,7 +351,7 @@ int tb_probe_root_dtz(
  * predicted principal variation.
  * RETURN VALUE:
  *   non-zero if ok, 0 means not all probes were successful
- * 
+ *
  */
 int tb_probe_root_wdl(uint64_t _white,
     uint64_t _black,
