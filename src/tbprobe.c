@@ -46,6 +46,7 @@ using namespace std;
 #define TB_HASHBITS  (TB_PIECES < 7 ?  11 : 12)
 #define TB_MAX_PIECE (TB_PIECES < 7 ? 254 : 650)
 #define TB_MAX_PAWN  (TB_PIECES < 7 ? 256 : 861)
+#define TB_MAX_SYMS  4096
 
 #ifndef _WIN32
 #include <fcntl.h>
@@ -59,7 +60,6 @@ using namespace std;
 typedef size_t map_t;
 #else
 #include <windows.h>
-#include <sys/mman.h>
 #define SEP_CHAR ';'
 #define FD HANDLE
 #define FD_ERR INVALID_HANDLE_VALUE
@@ -181,7 +181,7 @@ static unsigned lsb(uint64_t b) {
 #define max(a,b) a > b ? a : b
 #define min(a,b) a < b ? a : b
 
-#include <stdendian.h>
+#include "stdendian.h"
 
 #if _BYTE_ORDER == _BIG_ENDIAN
 
@@ -312,7 +312,7 @@ static void close_tb(FD fd)
 #endif
 }
 
-static void *map_file(FD fd, uint64_t *mapping)
+static void *map_file(FD fd, map_t *mapping)
 {
 #ifndef _WIN32
   struct stat statbuf;
@@ -337,17 +337,17 @@ static void *map_file(FD fd, uint64_t *mapping)
     fprintf(stderr,"CreateFileMapping() failed.\n");
     return NULL;
   }
-  *mapping = (uint64)map;
+  *mapping = (map_t)map;
   void *data = (void *)MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
   if (data == NULL) {
-    fprintf(stderr,"MapViewOfFile() failed, name = %s%s, error = %lu.\n", name, suffix, GetLastError());
+    fprintf(stderr,"MapViewOfFile() failed, error = %lu.\n", GetLastError());
   }
 #endif
   return data;
 }
 
 #ifndef _WIN32
-static void unmap_file(void *data, uint64_t size)
+static void unmap_file(void *data, map_t size)
 {
   if (!data) return;
   if (!munmap(data, size)) {
@@ -355,7 +355,7 @@ static void unmap_file(void *data, uint64_t size)
   }
 }
 #else
-static void unmap_file(void *data, uint64_t mapping)
+static void unmap_file(void *data, map_t mapping)
 {
   if (!data) return;
   if (!UnmapViewOfFile(data)) {
@@ -848,8 +848,10 @@ bool tb_init(const char *path)
     }
   }
 
-  for (int i = 0; i < (1 << TB_HASHBITS); i++)
-    tbHash[i] = (struct TbHashEntry){ 0 };
+  for (int i = 0; i < (1 << TB_HASHBITS); i++) {
+    tbHash[i].key = 0;
+    tbHash[i].ptr = NULL;
+  }
 
   char str[16];
   int i, j, k, l, m;
@@ -1422,7 +1424,8 @@ static struct PairsData *setup_pairs(uint8_t **ptr, size_t tb_size,
   size[1] = 2ULL * numBlocks;
   size[2] = (size_t)realNumBlocks << blockSize;
 
-  char tmp[numSyms];
+  assert(numSyms < TB_MAX_SYMS);
+  char tmp[TB_MAX_SYMS];
   memset(tmp, 0, numSyms);
   for (uint32_t s = 0; s < numSyms; s++)
     if (!tmp[s])
@@ -1498,12 +1501,12 @@ static bool init_table(struct BaseEntry *be, const char *str, int type)
                                              : &PIECE(be)->dtmMapIdx;
     for (int t = 0; t < num; t++) {
       for (int i = 0; i < 2; i++) {
-        mapIdx[t][0][i] = (uint16_t *)data + 1 - map;
+        mapIdx[t][0][i] = (uint16_t)(data + 1 - (uint8_t*)map);
         data += 2 + 2 * read_le_u16(data);
       }
       if (split) {
         for (int i = 0; i < 2; i++) {
-          mapIdx[t][1][i] = (uint16_t *)data + 1 - map;
+          mapIdx[t][1][i] = (uint16_t)(data + 1 - (uint8_t*)map);
           data += 2 + 2 * read_le_u16(data);
         }
       }
@@ -1521,13 +1524,13 @@ static bool init_table(struct BaseEntry *be, const char *str, int type)
       if (flags[t] & 2) {
         if (!(flags[t] & 16)) {
           for (int i = 0; i < 4; i++) {
-            mapIdx[t][i] = data + 1 - (uint8_t *)map;
+            mapIdx[t][i] = (uint16_t)(data + 1 - (uint8_t *)map);
             data += 1 + data[0];
           }
         } else {
           data += (uintptr_t)data & 0x01;
           for (int i = 0; i < 4; i++) {
-            mapIdx[t][i] = (uint16_t *)data + 1 - (uint16_t *)map;
+            mapIdx[t][i] = (uint16_t)(data + 1 - (uint8_t *)map);
             data += 2 + 2 * read_le_u16(data);
           }
         }
@@ -1577,7 +1580,7 @@ static uint8_t *decompress_pairs(struct PairsData *d, size_t idx)
   if (!d->idxBits)
     return d->constValue;
 
-  uint32_t mainIdx = idx >> d->idxBits;
+  uint32_t mainIdx = (uint32_t)(idx >> d->idxBits);
   int litIdx = (idx & (((size_t)1 << d->idxBits) - 1)) - ((size_t)1 << (d->idxBits - 1));
   uint32_t block;
   memcpy(&block, d->indexTable + 6 * mainIdx, sizeof(block));
@@ -1610,7 +1613,7 @@ static uint8_t *decompress_pairs(struct PairsData *d, size_t idx)
     int l = m;
     while (code < base[l]) l++;
     sym = from_le_u16(offset[l]);
-    sym += (code - base[l]) >> (64 - l);
+    sym += (uint32_t)((code - base[l]) >> (64 - l));
     if (litIdx < (int)symLen[sym] + 1) break;
     litIdx -= (int)symLen[sym] + 1;
     code <<= l;
@@ -2252,7 +2255,7 @@ static int root_probe_dtz(const Pos *pos, bool hasRepeated, bool useRule50, stru
   // Probe, rank and score each move.
   TbMove rootMoves[TB_MAX_MOVES];
   TbMove * end = gen_legal(pos,rootMoves);
-  rm->size = end-rootMoves;
+  rm->size = (unsigned)(end-rootMoves);
   Pos pos1;
   for (unsigned i = 0; i < rm->size; i++) {
     struct TbRootMove *m = &(rm->moves[i]);
@@ -2318,7 +2321,7 @@ int root_probe_wdl(const Pos *pos, bool useRule50, struct TbRootMoves *rm)
   // Probe, rank and score each move.
   TbMove moves[TB_MAX_MOVES];
   TbMove *end = gen_legal(pos,moves);
-  rm->size = end-moves;
+  rm->size = (unsigned)(end-moves);
   Pos pos1;
   for (unsigned i = 0; i < rm->size; i++) {
     struct TbRootMove *m = &rm->moves[i];
@@ -2341,7 +2344,7 @@ int root_probe_wdl(const Pos *pos, bool useRule50, struct TbRootMoves *rm)
 int root_probe_dtm(const Pos *pos, struct TbRootMoves *rm)
 {
   int success;
-  Value tmpScore[rm->size];
+  Value tmpScore[TB_MAX_MOVES];
 
   // Probe each move.
   for (unsigned i = 0; i < rm->size; i++) {
