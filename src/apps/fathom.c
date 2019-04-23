@@ -714,7 +714,7 @@ int main(int argc, char **argv)
     }
     printf("%d moves returned from DTZ probe\n",moves.size);
     char str[20];
-    for (int i = 0; i < moves.size; i++) {
+    for (unsigned i = 0; i < moves.size; i++) {
       struct TbRootMove *m = &(moves.moves[i]);
       move_parts_to_str(pos, TB_MOVE_FROM(m->move),
                         TB_MOVE_TO(m->move),
@@ -732,7 +732,7 @@ int main(int argc, char **argv)
       return -1;
     }
     printf("%d moves returned from WDL probe\n",moves.size);
-    for (int i = 0; i < moves.size; i++) {
+    for (unsigned i = 0; i < moves.size; i++) {
       struct TbRootMove *m = &(moves.moves[i]);
       move_parts_to_str(pos, TB_MOVE_FROM(m->move),
                         TB_MOVE_TO(m->move),

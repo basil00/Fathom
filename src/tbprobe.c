@@ -185,9 +185,11 @@ static unsigned lsb(uint64_t b) {
 
 #if _BYTE_ORDER == _BIG_ENDIAN
 
+/* (unused)
 static uint64_t from_le_u64(uint64_t input) {
   return bswap64(input);
 }
+*/
 
 static uint32_t from_le_u32(uint32_t input) {
   return bswap32(input);
@@ -205,15 +207,18 @@ static uint32_t from_be_u32(uint32_t x) {
   return x;
 }
 
-static uint16_t from_be_u16(uint16_t x) {
+/* (unused)
+  static uint16_t from_be_u16(uint16_t x) {
   return x;
-}
+ }*/
 
 #else
 
+/* (unused)
 static uint64_t from_le_u64(uint64_t x) {
   return x;
 }
+*/
 
 static uint32_t from_le_u32(uint32_t x) {
   return x;
@@ -231,9 +236,11 @@ static uint32_t from_be_u32(uint32_t input) {
   return bswap32(input);
 }
 
+/* (unused)
 static uint16_t from_be_u16(const uint16_t input) {
   return bswap16(input);
 }
+*/
 
 #endif
 
@@ -585,6 +592,7 @@ int tb_probe_root_dtz(
         (uint8_t)ep,
         turn
     };
+    if (castling != 0) return 0;
     return root_probe_dtz(&pos, hasRepeated, useRule50, results);
 }
 
@@ -617,6 +625,7 @@ int tb_probe_root_wdl(
         (uint8_t)ep,
         turn
     };
+    if (castling != 0) return 0;
     return root_probe_wdl(&pos, useRule50, results);
 }
 
@@ -1742,7 +1751,7 @@ int probe_table(const Pos *pos, int s, int *success, const int type)
   int p[TB_PIECES];
   size_t idx;
   int t = 0;
-  uint8_t flags;
+  uint8_t flags = 0; // initialize to fix GCC warning
 
   if (!be->hasPawns) {
     if (type == DTZ) {
