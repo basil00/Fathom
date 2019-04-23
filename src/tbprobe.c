@@ -1687,7 +1687,8 @@ int probe_table(const Pos *pos, int s, int *success, const int type)
   uint64_t key = calc_key(pos,false);
 
   // Test for KvK
-  if (type == WDL && key == 2ULL)
+  // Note: Cfish has key == 2ULL for KvK but we have 0
+  if (type == WDL && key == 0ULL)
     return 0;
 
   int hashIdx = key >> (64 - TB_HASHBITS);
@@ -2391,7 +2392,7 @@ void tb_expand_mate(Pos *pos, struct TbRootMove *move, Value moveScore, unsigned
 
   Pos root = *pos;
   // First get to the end of the incomplete PV.
-  for (int i = 0; i < move->pvSize; i++) {
+  for (unsigned i = 0; i < move->pvSize; i++) {
     v = v > 0 ? -v - 1 : -v + 1;
     wdl = -wdl;
     Pos pos0 = *pos;
