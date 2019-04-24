@@ -5,7 +5,7 @@ endif
 ifeq ($(UNAME),Darwin)
     TARGET=fathom.macosx
 endif
-CC=clang
+CC?=gcc
 STRIP=strip
 CFLAGS=-std=c99 -O2 -Wall -D TB_NO_THREADS -I..
 
