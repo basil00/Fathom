@@ -35,7 +35,7 @@ For more information, run the following command:
 Programming API
 ---------------
 
-Fathom provides a simple API.  There are three main function calls:
+Fathom provides a simple API. Following are the main function calls:
 
 * `tb_init` initializes the tablebases.
 * `tb_free` releases any resources allocated by Fathom.
