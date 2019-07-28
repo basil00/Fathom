@@ -2193,8 +2193,10 @@ int probe_dtz(Pos *pos, int *success)
          continue; // not legal
       int v = -probe_wdl(&pos1, success);
       if (*success == 0) return 0;
-      if (v == wdl)
+      if (v == wdl) {
+        assert(wdl < 3);
         return WdlToDtz[wdl + 2];
+      }
     }
   }
 
@@ -2275,6 +2277,7 @@ static int root_probe_dtz(const Pos *pos, bool hasRepeated, bool useRule50, stru
     if (pos1.rule50 == 0) {
       // If the move resets the 50-move counter, dtz is -101/-1/0/1/101.
       v = -probe_wdl(&pos1, &success);
+      assert(v < 3);
       v = WdlToDtz[v + 2];
     } else {
       // Otherwise, take dtz for the new position and correct by 1 ply.
