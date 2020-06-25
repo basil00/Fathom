@@ -1,6 +1,6 @@
 /*
 Copyright (c) 2015 basil00
-Modifications Copyright (c) 2016-2019 by Jon Dart
+Modifications Copyright (c) 2016-2020 by Jon Dart
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -68,6 +68,7 @@ SOFTWARE.
 
 // Note: WHITE, BLACK values are reverse of Stockfish
 #ifdef __cplusplus
+namespace {
 enum Color { BLACK, WHITE };
 enum PieceType { PAWN=1, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 enum Piece {
@@ -1042,4 +1043,8 @@ static TbMove *gen_legal(const Pos *pos, TbMove *moves)
   }
   return results;
 }
+
+#ifdef __cplusplus
+};
+#endif
 
