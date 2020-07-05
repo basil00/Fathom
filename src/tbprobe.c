@@ -115,10 +115,10 @@ typedef HANDLE map_t;
 #define TB_SOFTWARE_POP_COUNT
 #elif defined (__GNUC__) && defined(__x86_64__) && defined(__SSE4_2__)
 #include <popcntintrin.h>
-#define popcount(x)             _mm_popcnt_u64((x))
+#define popcount(x)             (int)_mm_popcnt_u64((x))
 #elif defined(_MSC_VER) && (_MSC_VER >= 1500) && defined(_M_AMD64)
 #include <nmmintrin.h>
-#define popcount(x)             _mm_popcnt_u64((x))
+#define popcount(x)             (int)_mm_popcnt_u64((x))
 #else
 #define TB_SOFTWARE_POP_COUNT
 #endif
