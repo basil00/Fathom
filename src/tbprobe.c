@@ -302,8 +302,16 @@ static FD open_tb(const char *str, const char *suffix)
 #ifndef _WIN32
     fd = open(file, O_RDONLY);
 #else
+#ifdef _UNICODE
+    wchar_t ucode_name[4096];
+    size_t len;
+    mbstowcs_s(&len, ucode_name, strlen(file)+1, file, _TRUNCATE);
+    fd = CreateFile(ucode_name, GENERIC_READ, FILE_SHARE_READ, NULL,
+			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
     fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
 			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#endif
 #endif
     free(file);
     if (fd != FD_ERR) {
