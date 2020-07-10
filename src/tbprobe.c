@@ -305,7 +305,7 @@ static FD open_tb(const char *str, const char *suffix)
 #ifdef _UNICODE
     wchar_t ucode_name[4096];
     size_t len;
-    mbstowcs_s(&len, ucode_name, strlen(file)+1, file, _TRUNCATE);
+    mbstowcs_s(&len, ucode_name, 4096, file, _TRUNCATE);
     fd = CreateFile(ucode_name, GENERIC_READ, FILE_SHARE_READ, NULL,
 			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
