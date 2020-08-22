@@ -832,9 +832,13 @@ bool tb_init(const char *path)
     numWdl = numDtm = numDtz = 0;
   }
 
+  TB_LARGEST = 0;
+
   // if path is an empty string or equals "<empty>", we are done.
   const char *p = path;
-  if (strlen(p) == 0 || !strcmp(p, "<empty>")) return true;
+  if (strlen(p) == 0 || !strcmp(p, "<empty>")) {
+    return true;
+  }
 
   pathString = (char*)malloc(strlen(p) + 1);
   strcpy(pathString, p);
@@ -858,7 +862,6 @@ bool tb_init(const char *path)
 
   tbNumPiece = tbNumPawn = 0;
   TB_MaxCardinality = TB_MaxCardinalityDTM = 0;
-  TB_LARGEST = 0;
 
   if (!pieceEntry) {
     pieceEntry = (struct PieceEntry*)malloc(TB_MAX_PIECE * sizeof(*pieceEntry));
