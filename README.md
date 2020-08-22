@@ -92,7 +92,7 @@ functions via a small module, with an interface something like this:
 extern tb_knight_attacks(unsigned square);
 extern tb_king_attacks(unsigned square);
 extern tb_root_attacks(unsigned square, uint64_t occ);
-extern tb_bishop_attacks(unsigned square, uinit64_t occ);
+extern tb_bishop_attacks(unsigned square, uint64_t occ);
 extern tb_queen_attacks(unsigned square, uint64_t occ);
 extern tb_pawn_attacks(unsigned square, uint64_t occ);
 
@@ -126,7 +126,7 @@ derivative. tbprobe.c includes 7-man tablebase support. It was written
 by Ronald de Man and released for unrestricted distribution and use.
 
 This fork of Fathom replaces the Cfish board representation and move
-generation code used in tbprobe.c with simpler code from the original
+generation code used in tbprobe.c with simpler, MIT-licensed code from the original
 Fathom source by Basil. The code has been reorganized so that
 `tbchess.c` contains all move generation and most chess-related typedefs
 and functions, while `tbprobe.c` contains all the tablebase probing
