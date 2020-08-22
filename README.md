@@ -53,41 +53,84 @@ Fathom provides a simple API. Following are the main function calls:
 
 Fathom does not require the callee to provide any additional functionality
 (e.g. move generation). A simple set of chess-related functions including move
-generation is provided in file tbchess.c. However, chess engines can opt to
+generation is provided in file `tbchess.c`. However, chess engines can opt to
 replace some of this functionality for better performance (see below).
 
-Chess Engines
+Chess engines
 -------------
 
-Chess engines can use `tb_probe_wdl` to get the WDL value during search.
-This function is thread safe (unless TB_NO_THREADS is set). The various
-"probe_root" functions are intended for probing only at the root node
-and are not thread-safe.
+Chess engines can use `tb_probe_wdl` to get the WDL value during
+search.  This function is thread safe (unless TB_NO_THREADS is
+set). The various "probe_root" functions are intended for probing only
+at the root node and are not thread-safe.
 
-Chess engines can opt for a tighter integration of Fathom by configuring
-`tbconfig.h`.  Specifically, the chess engines can define `TB_*_ATTACKS`
-macros that replace the default attack functions with the engine's own definitions,
-avoiding duplication of functionality.
+Chess engines and other clients can modify some features of Fathom and
+override some of its internal functions by configuring
+`tbconfig.h`. `tbconfig.h` is included in Fathom's code with angle
+brackets. This allows a client of Fathom to override tbconfig.h by
+placing its own modified copy in its include path before the Fathom
+source directory.
+
+One option provided by `tbconfig.h` is to define macros that replace
+some aspects of Fathom's functionality, such as calculating piece
+attacks, avoiding duplication of functionality.  If doing this,
+however, be careful with including typedefs or defines from your own
+code into `tbconfig.h`, since these may clash with internal definitions
+used by Fathom. I recommend instead interfacing to external
+functions via a small module, with an interface something like this:
+
+```
+#ifndef _TB_ATTACK_INTERFACE
+#define _TB_ATTACK_INTERFACE
+
+#ifdef __cplusplus
+#include <cstdint>
+#else
+#include <stdint.h>
+#endif
+
+extern tb_knight_attacks(unsigned square);
+extern tb_king_attacks(unsigned square);
+extern tb_root_attacks(unsigned square, uint64_t occ);
+extern tb_bishop_attacks(unsigned square, uinit64_t occ);
+extern tb_queen_attacks(unsigned square, uint64_t occ);
+extern tb_pawn_attacks(unsigned square, uint64_t occ);
+
+#endif
+```
+
+You can add if wanted other function definitions such as a popcnt
+function based on the chess engine's native popcnt support.
+
+`tbconfig.h` can then reference these functions safety because the
+interface depends only on types defined in standard headers. The
+implementation, however, can use any types from the chess engine or
+other client that are necessary. (A good optimizer with link-time
+optimization will inline the implementation code even though it is not
+visible in the interface).
 
 History and Credits
 -------------------
 
-The Syzygy tablebases were created by Ronald de Man. This original version of Fathom
+The Syzygy tablebases were created by Ronald de Man. The original version of Fathom
 (https://github.com/basil00/Fathom) combined probing code from Ronald de Man, originally written for
 Stockfish, with chess-related functions and other support code from Basil Falcinelli.
-This repository was originaly a fork of that codebase, with additional modifications
-by Jon Dart.
+That codebase is no longer being maintained. This repository was originaly a fork of
+that codebase, with additional modifications by Jon Dart.
 
-However, the current release of Fathom is not derived directly from the probing code
-written for Stockfish, but from tbprobe.c, which is a component of the Cfish chess engine
-(https://github.com/syzygy1/Cfish), a Stockfish derivative. tbprobe.c was written
+However, the current Fathom code in this repository is no longer
+derived directly from the probing code written for Stockfish, but
+instead derives from tbprobe.c, which is a component of the Cfish
+chess engine (https://github.com/syzygy1/Cfish), a Stockfish
+derivative. tbprobe.c includes 7-man tablebase support. It was written
 by Ronald de Man and released for unrestricted distribution and use.
 
-Fathom replaces the Cfish board representation and move generation code used in tbprobe.c
-with simpler code from the original Fathom source by Basil. The code has been reorganized
-so that tbchess.c contains all move generation and most chess-related typedefs and
-functions, while tbprobe.c contains all the tablebase probing code. The code replacement and
-reorganization was done by Jon Dart.
+This fork of Fathom replaces the Cfish board representation and move
+generation code used in tbprobe.c with simpler code from the original
+Fathom source by Basil. The code has been reorganized so that
+`tbchess.c` contains all move generation and most chess-related typedefs
+and functions, while `tbprobe.c` contains all the tablebase probing
+code. The code replacement and reorganization was done by Jon Dart.
 
 License
 -------
