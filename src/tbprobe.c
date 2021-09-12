@@ -2368,6 +2368,9 @@ int root_probe_wdl(const Pos *pos, bool useRule50, struct TbRootMoves *rm)
 // Use the DTM tables to find mate scores.
 // Either DTZ or WDL must have been probed successfully earlier.
 // A return value of 0 means that not all probes were successful.
+#if defined(__cplusplus) && __cplusplus >= 201703L
+[[maybe_unused]]
+#endif
 int root_probe_dtm(const Pos *pos, struct TbRootMoves *rm)
 {
   int success;
@@ -2411,6 +2414,9 @@ int root_probe_dtm(const Pos *pos, struct TbRootMoves *rm)
 }
 
 // Use the DTM tables to complete a PV with mate score.
+#if defined(__cplusplus) && __cplusplus >= 201703L
+[[maybe_unused]]
+#endif
 void tb_expand_mate(Pos *pos, struct TbRootMove *move, Value moveScore, unsigned cardinalityDTM)
 {
   int success = 1, chk = 0;
