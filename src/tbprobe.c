@@ -121,13 +121,22 @@ typedef HANDLE map_t;
 #include <nmmintrin.h>
 #define popcount(x)             (int)_mm_popcnt_u64((x))
 #else
+// try to use a builtin
+#if defined (__has_builtin)
+#if __has_builtin(__builtin_popcountll)
+#define popcount(x) __builtin_popcountll((x))
+#else
 #define TB_SOFTWARE_POP_COUNT
+#endif
+#else
+#define TB_SOFTWARE_POP_COUNT
+#endif
 #endif
 
 #ifdef TB_SOFTWARE_POP_COUNT
-// Not a recognized compiler/architecture that has popcount:
-// fall back to a software popcount. This one is still reasonably
-// fast.
+// Not a recognized compiler/architecture that has popcount, and
+// no builtin available: fall back to a software popcount. This one
+// is still reasonably fast.
 static inline unsigned tb_software_popcount(uint64_t x)
 {
     x = x - ((x >> 1) & 0x5555555555555555ull);
@@ -135,7 +144,6 @@ static inline unsigned tb_software_popcount(uint64_t x)
     x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0full;
     return (x * 0x0101010101010101ull) >> 56;
 }
-
 #define popcount(x) tb_software_popcount(x)
 #endif
 
@@ -370,7 +378,7 @@ static void unmap_file(void *data, map_t size)
 {
   if (!data) return;
   if (munmap(data, size) != 0) {
-	  perror("munmap");
+      perror("munmap");
   }
 }
 #else
