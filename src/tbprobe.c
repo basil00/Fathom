@@ -39,10 +39,6 @@ SOFTWARE.
 #endif
 #include "tbprobe.h"
 
-#ifdef __cplusplus
-using namespace std;
-#endif
-
 #define TB_PIECES 7
 #define TB_HASHBITS  (TB_PIECES < 7 ?  11 : 12)
 #define TB_MAX_PIECE (TB_PIECES < 7 ? 254 : 650)
@@ -68,6 +64,13 @@ typedef size_t map_t;
 #define FD HANDLE
 #define FD_ERR INVALID_HANDLE_VALUE
 typedef HANDLE map_t;
+#endif
+
+// This must be after the inclusion of Windows headers, because otherwise
+// std::byte conflicts with "byte" in rpcndr.h . The error occurs if C++
+// standard is at lest 17, as std::byte was introduced in C++17.
+#ifdef __cplusplus
+using namespace std;
 #endif
 
 #define DECOMP64
