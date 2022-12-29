@@ -318,11 +318,14 @@ static FD open_tb(const char *str, const char *suffix)
     wchar_t ucode_name[4096];
     size_t len;
     mbstowcs_s(&len, ucode_name, 4096, file, _TRUNCATE);
+    /* use FILE_FLAG_RANDOM_ACCESS because we are likely to access this file
+       randomly, so prefetch is not helpful. See
+       https://github.com/official-stockfish/Stockfish/pull/1829 */
     fd = CreateFile(ucode_name, GENERIC_READ, FILE_SHARE_READ, NULL,
-			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			  OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL);
 #else
     fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
-			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			  OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL);
 #endif
 #endif
     free(file);
@@ -358,6 +361,12 @@ static void *map_file(FD fd, map_t *mapping)
     perror("mmap");
     return NULL;
   }
+#ifdef POSIX_MADV_RANDOM
+  /* Advise the kernel that we are likely to access this data
+     region randomly, so prefetch is not helpful. See
+     https://github.com/official-stockfish/Stockfish/pull/1829 */
+  posix_madvise(data, statbuf.st_size, POSIX_MADV_RANDOM);
+#endif
 #else
   DWORD size_low, size_high;
   size_low = GetFileSize(fd, &size_high);
