@@ -7,7 +7,7 @@ ifeq ($(UNAME),Darwin)
 endif
 CC?=gcc
 STRIP=strip
-CFLAGS=-std=gnu99 -O2 -Wall -DTB_NO_THREADS -I..
+CFLAGS=-std=gnu99 -O2 -Wall -Wshadow -DTB_NO_THREADS -I..
 
 main: $(TARGET)
 

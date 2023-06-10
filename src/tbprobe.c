@@ -1,7 +1,7 @@
 /*
 Copyright (c) 2013-2018 Ronald de Man
 Copyright (c) 2015 basil00
-Modifications Copyright (c) 2016-2022 by Jon Dart
+Modifications Copyright (c) 2016-2023 by Jon Dart
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1974,12 +1974,12 @@ int probe_wdl(Pos *pos, int *success)
   // Now handle the stalemate case.
   if (bestEp > -3 && v == 0) {
     TbMove moves[TB_MAX_MOVES];
-    TbMove *end = gen_moves(pos, moves);
+    TbMove *end2 = gen_moves(pos, moves);
     // Check for stalemate in the position with ep captures.
-    for (m = moves; m < end; m++) {
+    for (m = moves; m < end2; m++) {
       if (!is_en_passant(pos,*m) && legal_move(pos, *m)) break;
     }
-    if (m == end && !is_check(pos)) {
+    if (m == end2 && !is_check(pos)) {
       // stalemate score from tb (w/o e.p.), but an en-passant capture
       // is possible.
       *success = 2;
