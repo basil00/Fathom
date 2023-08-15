@@ -5,9 +5,9 @@ endif
 ifeq ($(UNAME),Darwin)
     TARGET=fathom.macosx
 endif
-CC=clang
+CC?=gcc
 STRIP=strip
-CFLAGS=-std=gnu99 -O2 -Wall -D TB_NO_THREADS -D TB_NO_HW_POP_COUNT -I..
+CFLAGS=-std=gnu99 -O2 -Wall -Wshadow -DTB_NO_THREADS -I..
 
 main: $(TARGET)
 
