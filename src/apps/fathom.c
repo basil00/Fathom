@@ -1,6 +1,7 @@
 /*
  * fathom.c
- * (C) 2015 basil, all rights reserved,
+ * (C) 2015 basil, all rights reserved.
+ * (C) 2018-2019 Jon Dart, All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -260,6 +261,21 @@ fen_parse_error:
 }
 
 /*
+ * Test if the given move is an en passant capture.
+ */
+static bool is_en_passant(const struct pos *pos, uint64_t from, uint64_t to)
+{
+    uint64_t us = (pos->turn? pos->white: pos->black);
+    if (pos->ep == 0)
+        return false;
+    if (to != pos->ep)
+        return false;
+    if ((board(from) & us & pos->pawns) == 0)
+        return false;
+    return true;
+}
+
+/*
  * Test if the king is in check.
  */
 static bool is_check(const struct pos *pos)
@@ -287,16 +303,12 @@ static bool is_check(const struct pos *pos)
 /*
  * Convert a move into a string.
  */
-static void move_to_str(const struct pos *pos, unsigned move, char *str)
-{
-    uint64_t occ      = pos->black | pos->white;
-    uint64_t us       = (pos->turn? pos->white: pos->black);
-    unsigned from     = TB_GET_FROM(move);
-    unsigned to       = TB_GET_TO(move);
+static void move_parts_to_str(const struct pos *pos, int from, int to, int promotes, char *str) {
     unsigned r        = rank(from);
     unsigned f        = file(from);
-    unsigned promotes = TB_GET_PROMOTES(move);
-    bool     capture  = (occ & board(to)) != 0 || (TB_GET_EP(move) != 0);
+    uint64_t occ      = pos->black | pos->white;
+    uint64_t us       = (pos->turn? pos->white: pos->black);
+    bool     capture  = (occ & board(to)) != 0 || is_en_passant(pos,from,to);
     uint64_t b = board(from), att = 0;
     if (b & pos->kings)
         *str++ = 'K';
@@ -326,9 +338,9 @@ static void move_to_str(const struct pos *pos, unsigned move, char *str)
         *str++ = 'a' + f;
     else if (tb_pop_count(att) > 1)
     {
-        if (tb_pop_count(att & (BOARD_FILE_A >> f)) <= 1)
+        if (tb_pop_count(att & (BOARD_FILE_A >> f)) == 1)
             *str++ = 'a' + f;
-        else if (tb_pop_count(att & (BOARD_RANK_1 >> r)) <= 1)
+        else if (tb_pop_count(att & (BOARD_RANK_1 << (8*r))) == 1)
             *str++ = '1' + r;
         else
         {
@@ -356,6 +368,14 @@ static void move_to_str(const struct pos *pos, unsigned move, char *str)
         }
     }
     *str++ = '\0';
+}
+
+static void move_to_str(const struct pos *pos, unsigned move, char *str)
+{
+    unsigned from     = TB_GET_FROM(move);
+    unsigned to       = TB_GET_TO(move);
+    unsigned promotes = TB_GET_PROMOTES(move);
+    move_parts_to_str(pos, from, to, promotes, str);
 }
 
 /*
@@ -437,6 +457,7 @@ static void do_move(struct pos *pos, unsigned move)
  */
 static void print_PV(struct pos *pos)
 {
+    struct pos temp = *pos;
     putchar('\n');
     bool first = true, check = false;
     if (!pos->turn)
@@ -452,19 +473,19 @@ static void print_PV(struct pos *pos)
         if (move == TB_RESULT_FAILED)
         {
             printf("{TB probe failed}\n");
-            return;
+            break;
         }
         if (move == TB_RESULT_CHECKMATE)
         {
             printf("# %s\n", (pos->turn? "0-1": "1-0"));
-            return;
+            break;
         }
         if (check)
             putchar('+');
         if (pos->rule50 >= 100 || move == TB_RESULT_STALEMATE)
         {
             printf(" 1/2-1/2\n");
-            return;
+            break;
         }
 
         char str[32];
@@ -478,6 +499,8 @@ static void print_PV(struct pos *pos)
         do_move(pos, move);
         check = is_check(pos);
     }
+    // restore to root position
+    *pos = temp;
 }
 
 /*
@@ -567,7 +590,7 @@ int main(int argc, char **argv)
         {"test", 0, 0, OPTION_TEST},
         {NULL, 0, 0, 0}
     };
-    const char *path = NULL;
+    char *path = NULL;
     bool test = false;
     while (true)
     {
@@ -578,8 +601,9 @@ int main(int argc, char **argv)
         switch (opt)
         {
             case OPTION_PATH:
-                path = strdup(optarg);
+                path = (char*)malloc(sizeof(char)*(strlen(optarg)+1));
                 assert(path != NULL);
+                strcpy(path,optarg);
                 break;
             case OPTION_TEST:
                 test = true;
@@ -598,6 +622,10 @@ int main(int argc, char **argv)
     // (0) init:
     if (path == NULL)
         path = getenv("TB_PATH");
+    if (path == NULL) {
+        fprintf(stderr, "Path not set");
+        exit(EXIT_FAILURE);
+    }
     tb_init(path);
     if (TB_LARGEST == 0)
     {
@@ -674,6 +702,44 @@ int main(int argc, char **argv)
     printf("\"]\n");
     print_PV(pos);
 
+    struct TbRootMoves moves;
+    int result = tb_probe_root_dtz(pos->white, pos->black, pos->kings,
+            pos->queens, pos->rooks, pos->bishops, pos->knights, pos->pawns,
+                               pos->rule50, pos->castling, pos->ep, pos->turn, false, true, &moves);
+
+
+    if (!result) {
+      fprintf(stderr,"DTZ proble failed\n");
+      return -1;
+    }
+    printf("%d moves returned from DTZ probe\n",moves.size);
+    char str[20];
+    for (unsigned i = 0; i < moves.size; i++) {
+      struct TbRootMove *m = &(moves.moves[i]);
+      move_parts_to_str(pos, TB_MOVE_FROM(m->move),
+                        TB_MOVE_TO(m->move),
+                        TB_MOVE_PROMOTES(m->move),str);
+
+      printf("%s rank = %d score=%d\n", str, m->tbRank, m->tbScore);
+    }
+    result = tb_probe_root_wdl(pos->white, pos->black, pos->kings,
+            pos->queens, pos->rooks, pos->bishops, pos->knights, pos->pawns,
+                               pos->rule50, pos->castling, pos->ep, pos->turn, true, &moves);
+
+
+    if (!result) {
+      fprintf(stderr,"WDL proble failed\n");
+      return -1;
+    }
+    printf("%d moves returned from WDL probe\n",moves.size);
+    for (unsigned i = 0; i < moves.size; i++) {
+      struct TbRootMove *m = &(moves.moves[i]);
+      move_parts_to_str(pos, TB_MOVE_FROM(m->move),
+                        TB_MOVE_TO(m->move),
+                        TB_MOVE_PROMOTES(m->move),str);
+
+      printf("%s rank = %d score=%d\n", str, m->tbRank, m->tbScore);
+    }
     return 0;
 }
 
